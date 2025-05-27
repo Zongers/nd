@@ -12,6 +12,7 @@
             --primary: #6c5ce7;
             --primary-light: #a29bfe;
             --primary-dark: #5649c0;
+            --primary-transparent: rgba(108, 92, 231, 0.2);
             --success: #00b894;
             --success-light: rgba(0, 184, 148, 0.1);
             --success-bg: rgba(0, 184, 148, 0.2);
@@ -37,6 +38,7 @@
             --primary: #7d6bff;
             --primary-light: #5a4ac5;
             --primary-dark: #9a86ff;
+            --primary-transparent: rgba(125, 107, 255, 0.2);
             --success: #00d1a9;
             --success-light: rgba(0, 209, 169, 0.15);
             --success-bg: rgba(0, 209, 169, 0.25);
@@ -425,6 +427,17 @@
             background-color: var(--secondary-light);
         }
 
+        .party-count {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            background-color: var(--primary-transparent);
+            color: var(--primary);
+            font-weight: 600;
+            font-size: 0.8rem;
+            margin-left: 8px;
+        }
+
         .party-table-container {
             width: 100%;
             overflow-x: auto;
@@ -590,6 +603,20 @@
             color: var(--text-primary);
         }
 
+        /* Copy tick animation */
+        .copy-tick {
+            display: inline-block;
+            opacity: 0;
+            transform: scale(0.8);
+            transition: var(--transition);
+            margin-left: 5px;
+        }
+
+        .copy-tick.active {
+            opacity: 1;
+            transform: scale(1);
+        }
+
         /* Footer */
         footer {
             text-align: center;
@@ -705,7 +732,7 @@
                 <!-- Parties will be added here dynamically -->
                 <div class="party-container">
                     <div class="party-header">
-                        <h3>Party A</h3>
+                        <h3>Party A <span class="party-count" id="partyACount">0</span></h3>
                         <button class="btn btn-primary btn-with-tick" data-party="A">
                             <i class="fas fa-copy"></i> Copy
                             <span class="copy-tick"><i class="fas fa-check"></i></span>
@@ -725,7 +752,7 @@
 
                 <div class="party-container">
                     <div class="party-header">
-                        <h3>Party B</h3>
+                        <h3>Party B <span class="party-count" id="partyBCount">0</span></h3>
                         <button class="btn btn-primary btn-with-tick" data-party="B">
                             <i class="fas fa-copy"></i> Copy
                             <span class="copy-tick"><i class="fas fa-check"></i></span>
@@ -825,6 +852,7 @@
 
             // Default settings
             let partyCount = 2;
+            let partyCounts = {};
 
             // Event Listeners
             pasteBtn.addEventListener('click', handlePaste);
@@ -912,6 +940,13 @@
                         input.value = '';
                     });
                     
+                    // Reset party counts
+                    for (let i = 0; i < partyCount; i++) {
+                        const partyLetter = String.fromCharCode(65 + i);
+                        partyCounts[partyLetter] = 0;
+                        updatePartyCountDisplay(partyLetter);
+                    }
+                    
                     progressContainer.style.display = 'none';
                     totalNumbers.textContent = '0';
                     dividedNumbers.textContent = '0';
@@ -963,7 +998,9 @@
                     // Render tables for each party
                     for (let i = 0; i < partyCount; i++) {
                         const partyLetter = String.fromCharCode(65 + i);
+                        partyCounts[partyLetter] = parties[i].length;
                         renderPartyTable(partyLetter, parties[i]);
+                        updatePartyCountDisplay(partyLetter);
                     }
                     
                     // Update counters
@@ -976,6 +1013,14 @@
                     
                     showCopyStatus(`Divided ${items.length} items between ${partyCount} parties`, true);
                 }, 100);
+            }
+
+            // Update party count display
+            function updatePartyCountDisplay(partyLetter) {
+                const countElement = document.getElementById(`party${partyLetter}Count`);
+                if (countElement) {
+                    countElement.textContent = partyCounts[partyLetter] || 0;
+                }
             }
 
             // Update progress bar
@@ -1040,9 +1085,9 @@
                 navigator.clipboard.writeText(text).then(() => {
                     const tick = document.querySelector(`.btn-with-tick[data-party="${party}"] .copy-tick`);
                     if (tick) {
-                        tick.style.opacity = '1';
+                        tick.classList.add('active');
                         setTimeout(() => {
-                            tick.style.opacity = '0';
+                            tick.classList.remove('active');
                         }, 2000);
                     }
                     
@@ -1080,6 +1125,7 @@
                 const newCount = parseInt(partyCountInput.value);
                 if (newCount >= 2 && newCount <= 10) {
                     partyCount = newCount;
+                    partyCounts = {}; // Reset counts
                     updatePartyContainers();
                     closePartyCountModal();
                     showCopyStatus(`Set to divide between ${partyCount} parties`, true);
@@ -1094,13 +1140,13 @@
 
                 for (let i = 0; i < partyCount; i++) {
                     const partyLetter = String.fromCharCode(65 + i); // A, B, C, etc.
-                    const partyNumber = i + 1;
+                    partyCounts[partyLetter] = 0; // Initialize count
                     
                     const partyContainer = document.createElement('div');
                     partyContainer.className = 'party-container';
                     partyContainer.innerHTML = `
                         <div class="party-header">
-                            <h3>Party ${partyLetter}</h3>
+                            <h3>Party ${partyLetter} <span class="party-count" id="party${partyLetter}Count">0</span></h3>
                             <button class="btn btn-primary btn-with-tick" data-party="${partyLetter}">
                                 <i class="fas fa-copy"></i> Copy
                                 <span class="copy-tick"><i class="fas fa-check"></i></span>
